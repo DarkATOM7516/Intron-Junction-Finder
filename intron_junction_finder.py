@@ -93,10 +93,8 @@ def extract_introns_sam(sam_file):
                     elif letter in ('M', 'D'):
                         # match and deletion both consume reference sequence
                         ref_pos += bp
-                    else:
-                        # insertions (I) and soft clips (S) do not consume
-                        # reference sequence, so they are ignored here
-                        pass
+                    # insertions (I) and soft clips (S) do not consume
+                    # reference sequence, so no action is needed for them
 
         return junction_counts  # {(chromosome, start, end): read_count}
 
@@ -114,25 +112,29 @@ def parse_gene_locations(gene_file):
     """
     gene_data = {}
 
-    with open(gene_file) as locations:
-        next(locations)  # skip header row
-        for line in locations:
-            geneid, source_id, genomic_loc = line.rstrip().split('\t')
+    try:
+        with open(gene_file) as locations:
+            next(locations)  # skip header row
+            for line in locations:
+                geneid, source_id, genomic_loc = line.rstrip().split('\t')
 
-            try:
-                chrom, location = genomic_loc.split(':')
-            except ValueError:
-                continue  # skip rows with an unexpected location format
+                try:
+                    chrom, location = genomic_loc.split(':')
+                except ValueError:
+                    continue  # skip rows with an unexpected location format
 
-            starts, ends = location.split('..')
+                starts, ends = location.split('..')
 
-            try:
-                ends = ends[0:-3].replace(',', '')   # strip strand suffix and commas
-                starts = starts.replace(',', '')
-            except ValueError:
-                continue
+                try:
+                    ends = ends[0:-3].replace(',', '')   # strip strand suffix and commas
+                    starts = starts.replace(',', '')
+                except ValueError:
+                    continue
 
-            gene_data[geneid] = (chrom, int(starts), int(ends))
+                gene_data[geneid] = (chrom, int(starts), int(ends))
+    except FileNotFoundError:
+        print("Gene location file not found:", gene_file)
+        sys.exit(1)
 
     return gene_data
 
